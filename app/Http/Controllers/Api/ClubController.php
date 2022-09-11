@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Mail\RelationMail;
 use App\Models\Club;
 use App\Models\Coach;
 use App\Models\Player;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 
 class ClubController extends Controller
@@ -71,6 +73,8 @@ class ClubController extends Controller
 
         $club->coach()->save($coach);
 
+        Mail::to($coach->email)->send(new RelationMail('You have been added to the team ' . $club->name));
+
         return response()->json([
             'Coach added to Club'
         ]);
@@ -103,6 +107,9 @@ class ClubController extends Controller
             ], 422);
 
         $club->player()->save($player);
+
+        Mail::to($player->email)->send(new RelationMail('You have been added to the team ' . $club->name));
+
         return response()->json([
             'Player added to Club'
         ]);
@@ -152,6 +159,8 @@ class ClubController extends Controller
 
         $player->club()->dissociate()->save();
 
+        Mail::to($player->email)->send(new RelationMail('You have been removed from the team ' . $club->name));
+
         return response()->json([
             $player->name . ' removed from ' . $club->name
         ]);
@@ -165,6 +174,7 @@ class ClubController extends Controller
         }
 
         $club = Club::find($request->club_id);
+        $coach = $club->coach;
         if(!$club->hasCoach()) {
             return response()->json([
                 'error' => 'The club ' . $club->name . ' doesn`t have a coach'
@@ -172,6 +182,8 @@ class ClubController extends Controller
         }
 
         $club->coach->club()->dissociate()->save();
+
+        Mail::to($coach->email)->send(new RelationMail('You have been removed from the team ' . $club->name));
 
         return response()->json([
             'Coach removed from ' . $club->name
