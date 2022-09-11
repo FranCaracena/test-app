@@ -23,10 +23,12 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 
 Route::group(['prefix' => '/club'], function () {
     Route::post('/new', [ClubController::class, 'store'])->name('club.new-club');
-    Route::post('/{model}/new-coach', [ClubController::class, 'addCoach'])->name('club.new-coach');
+    Route::post('/new-coach', [ClubController::class, 'addCoach'])->name('club.new-coach');
     Route::post('/new-player', [ClubController::class, 'addPlayer'])->name('club.new-player');
     Route::post('/player/remove', [ClubController::class, 'removePlayer'])->name('club.remove-player');
+    Route::post('/coach/remove', [ClubController::class, 'removeCoach'])->name('club.remove-coach');
     Route::post('/change-budget', [ClubController::class, 'changeBudget'])->name('club.change-budget');
+    Route::get('/list-players', [ClubController::class, 'listPlayers'])->name('club.list-players');
 });
 
 Route::group(['prefix' => '/coach'], function () {

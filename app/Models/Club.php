@@ -40,10 +40,24 @@ class Club extends Model
             'player_id' => 'required|exists:players,id'
         ];
     }
+
+    public static function rulesToRemoveCoach(): array {
+        return [
+            'club_id' => 'required|exists:clubs,id',
+        ];
+    }
+
     public static function rulesForBudget(): array {
         return [
             'club_id' => 'required|exists:clubs,id',
             'budget' => 'required|integer',
+        ];
+    }
+
+    public static function rulesToList(): array {
+        return [
+            'club_id' => 'required|exists:clubs,id',
+            'id' => 'integer',
         ];
     }
 

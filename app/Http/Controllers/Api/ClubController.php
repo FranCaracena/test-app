@@ -39,7 +39,7 @@ class ClubController extends Controller
         ]);
     }
 
-    public function addCoach($model, Request $request): \Illuminate\Http\JsonResponse
+    public function addCoach(Request $request): \Illuminate\Http\JsonResponse
     {
         $validator = Validator::make($request->all(), Club::rulesForCoach());
         if ($validator->fails()) {
@@ -50,6 +50,11 @@ class ClubController extends Controller
         $coach = Coach::find($request->coach_id);
 
         if($club->hasCoach()) {
+            if($club->coach->id == $request->coach_id) {
+                return response()->json([
+                    'error' => 'The coach is already in the club'
+                ], 422);
+            }
             return response()->json([
                 'error' => 'The club already has the coach ' . $club->coach->name
             ], 422);
@@ -82,6 +87,11 @@ class ClubController extends Controller
         $player = Player::find($request->player_id);
 
         if($player->hasClub()) {
+            if($player->club->id == $request->club_id) {
+                return response()->json([
+                    'error' => 'The player is already in the club'
+                ], 422);
+            }
             return response()->json([
                 'error' => 'The player already has the club ' . $player->club->name
             ], 422);
@@ -134,10 +144,70 @@ class ClubController extends Controller
             return response()->json([
                 'error' => 'The player ' . $player->name . ' doesn`t have a club'
             ], 422);
+        }elseif($player->club->id != $request->club_id) {
+            return response()->json([
+                'error' => 'The player ' . $player->name . ' have a different club'
+            ], 422);
         }
+
+        $player->club()->dissociate()->save();
 
         return response()->json([
             $player->name . ' removed from ' . $club->name
         ]);
+    }
+
+    public function removeCoach(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $validator = Validator::make($request->all(), Club::rulesToRemoveCoach());
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
+        }
+
+        $club = Club::find($request->club_id);
+        if(!$club->hasCoach()) {
+            return response()->json([
+                'error' => 'The club ' . $club->name . ' doesn`t have a coach'
+            ], 422);
+        }
+
+        $club->coach->club()->dissociate()->save();
+
+        return response()->json([
+            'Coach removed from ' . $club->name
+        ]);
+    }
+
+    public function listPlayers(Request $request): \Illuminate\Http\JsonResponse
+    {
+
+        $validator = Validator::make($request->all(), Club::rulesToList());
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
+        }
+
+        $playersQuery = Player::where('club_id', '=', $request->club_id);
+
+        if($request->has('name')) {
+            $playersQuery->where('name', 'like', '%'.$request->name.'%');
+        }
+
+        if($request->has('email')) {
+            $playersQuery->where('email', 'like', '%'.$request->email.'%');
+        }
+
+        if($request->has('id')) {
+            $playersQuery->where('id', '=', $request->id);
+        }
+
+        if($request->has('salary')) {
+            preg_match('/[\<\>\=]/', $request->salary, $request_operator);
+            $operator = $request_operator[0] ?? '=';
+            $salary = preg_replace('/[\<\>\=]/', '', $request->salary);
+            $playersQuery->where('salary', $operator, $salary);
+        }
+
+        return response()->json([$playersQuery->paginate(5)]);
+
     }
 }
